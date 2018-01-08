@@ -1,0 +1,363 @@
+<!doctype html>
+<!--[if lt IE 7]>      <html class="no-js lt-ie9 lt-ie8 lt-ie7" lang=""> <![endif]-->
+<!--[if IE 7]>         <html class="no-js lt-ie9 lt-ie8" lang=""> <![endif]-->
+<!--[if IE 8]>         <html class="no-js lt-ie9" lang=""> <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang=""> <!--<![endif]-->
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+        <title></title>
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="apple-touch-icon" href="apple-touch-icon.png">
+
+        <link rel="stylesheet" href="css/bootstrap.min.css">
+        <style>
+            body {
+                padding-top: 50px;
+                padding-bottom: 20px;
+            }
+        </style>
+        <link rel="stylesheet" href="css/bootstrap-theme.min.css">
+        <link rel="stylesheet" href="css/main.css">
+
+        <script src="js/vendor/modernizr-2.8.3-respond-1.4.2.min.js"></script>
+    </head>
+    <body>
+        <!--[if lt IE 8]>
+            <p class="browserupgrade">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p>
+        <![endif]-->
+    <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="#">Tech Workers Visualization</a>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Main jumbotron for a primary marketing message or call to action -->
+<!--    <div class="jumbotron">
+      <div class="container">
+          <p><a class="btn btn-primary btn-lg float-right" href="#" role="button">Apply filters &raquo;</a></p>
+      </div>
+    </div>-->
+
+    <div class="container">
+      <!-- Example row of columns -->
+      <div class="row">
+        <div class="col-md-6">
+          <h2>Map</h2>
+          <div id="worldMap"></div>
+        </div>
+        <div class="col-md-6">
+          <h2>Tech Work Type</h2>
+          <p>Donec id elit non mi porta gravida at eget metus. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Etiam porta sem malesuada magna mollis euismod. Donec sed odio dui. </p>
+          <p><a class="btn btn-default" href="#" role="button">View details &raquo;</a></p>
+       </div>
+      </div>
+      <div class="row">
+        <div class="col-md-4">
+          <h2>Salary</h2>
+          <p>Donec sed odio dui. Cras justo odio, dapibus ac facilisis in, egestas eget quam. Vestibulum id ligula porta felis euismod semper. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus.</p>
+          <p><a class="btn btn-default" href="#" role="button">View details &raquo;</a></p>
+        </div>
+        <div class="col-md-4">
+          <h2>Education</h2>
+          <p>Donec id elit non mi porta gravida at eget metus. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Etiam porta sem malesuada magna mollis euismod. Donec sed odio dui. </p>
+          <p><a class="btn btn-default" href="#" role="button">View details &raquo;</a></p>
+        </div>
+        <div class="col-md-4">
+          <h2>Personal Traits</h2>
+          <p>Donec sed odio dui. Cras justo odio, dapibus ac facilisis in, egestas eget quam. Vestibulum id ligula porta felis euismod semper. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus.</p>
+          <p><a class="btn btn-default" href="#" role="button">View details &raquo;</a></p>
+        </div>
+      </div>
+
+      <hr>
+
+      <footer>
+        <p>&copy; Rumjana Romanova & Irene Panuju 2017-2018</p>
+      </footer>
+    </div> <!-- /container -->        
+        <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+        
+        <script>window.jQuery || document.write('<script src="js/vendor/jquery-1.11.2.min.js"><\/script>')</script>
+
+        <script src="js/vendor/bootstrap.min.js"></script>
+
+        <script src="js/main.js"></script>
+        
+        <script src="js/vendor/d3.v3.js"></script>        
+        <script src="js/vendor/topojson.v1.js"></script>        
+        <script src="js/vendor/datamaps.world.hires.js"></script>
+        
+        <script>	  
+	  var countries_name_id = {};
+	  var countries_id_name = {};
+	  for (var i=0;i<Datamap.prototype.worldTopo.objects.world.geometries.length;i++) {
+		var prop = Datamap.prototype.worldTopo.objects.world.geometries[i].properties;
+		countries_name_id[prop.name] = prop.iso;
+		countries_id_name[prop.id] = prop.name;
+	  }
+          
+          function Zoom(args) {
+            $.extend(this, {
+              $buttons:   $(".zoom-button"),
+              $info:      $("#zoom-info"),
+              scale:      { max: 50, currentShift: 0 },
+              $container: args.$container,
+              datamap:    args.datamap
+            });
+
+            this.init();
+          }
+
+          Zoom.prototype.init = function() {
+            var paths = this.datamap.svg.selectAll("path"),
+                subunits = this.datamap.svg.selectAll(".datamaps-subunit");
+
+            // preserve stroke thickness
+            paths.style("vector-effect", "non-scaling-stroke");
+
+            // disable click on drag end
+            subunits.call(
+              d3.behavior.drag().on("dragend", function() {
+                d3.event.sourceEvent.stopPropagation();
+              })
+            );
+
+            this.scale.set = this._getScalesArray();
+            this.d3Zoom = d3.behavior.zoom().scaleExtent([ 1, this.scale.max ]);
+
+            this._displayPercentage(1);
+            this.listen();
+          };
+
+          Zoom.prototype.listen = function() {
+            this.$buttons.off("click").on("click", this._handleClick.bind(this));
+
+            this.datamap.svg
+              .call(this.d3Zoom.on("zoom", this._handleScroll.bind(this)))
+              .on("dblclick.zoom", null); // disable zoom on double-click
+          };
+
+          Zoom.prototype.reset = function() {
+            this._shift("reset");
+          };
+
+          Zoom.prototype._handleScroll = function() {
+            var translate = d3.event.translate,
+                scale = d3.event.scale,
+                limited = this._bound(translate, scale);
+
+            this.scrolled = true;
+
+            this._update(limited.translate, limited.scale);
+          };
+
+          Zoom.prototype._handleClick = function(event) {
+            var direction = $(event.target).data("zoom");
+
+            this._shift(direction);
+          };
+
+          Zoom.prototype._shift = function(direction) {
+            var center = [ this.$container.width() / 2, this.$container.height() / 2 ],
+                translate = this.d3Zoom.translate(), translate0 = [], l = [],
+                view = {
+                  x: translate[0],
+                  y: translate[1],
+                  k: this.d3Zoom.scale()
+                }, bounded;
+
+            translate0 = [
+              (center[0] - view.x) / view.k,
+              (center[1] - view.y) / view.k
+            ];
+
+                  if (direction == "reset") {
+                  view.k = 1;
+              this.scrolled = true;
+            } else {
+                  view.k = this._getNextScale(direction);
+            }
+
+          l = [ translate0[0] * view.k + view.x, translate0[1] * view.k + view.y ];
+
+            view.x += center[0] - l[0];
+            view.y += center[1] - l[1];
+
+            bounded = this._bound([ view.x, view.y ], view.k);
+
+            this._animate(bounded.translate, bounded.scale);
+          };
+
+          Zoom.prototype._bound = function(translate, scale) {
+            var width = this.$container.width(),
+                height = this.$container.height();
+
+            translate[0] = Math.min(
+              (width / height)  * (scale - 1),
+              Math.max( width * (1 - scale), translate[0] )
+            );
+
+            translate[1] = Math.min(0, Math.max(height * (1 - scale), translate[1]));
+
+            return { translate: translate, scale: scale };
+          };
+
+          Zoom.prototype._update = function(translate, scale) {
+            this.d3Zoom
+              .translate(translate)
+              .scale(scale);
+
+            this.datamap.svg.selectAll("g")
+              .attr("transform", "translate(" + translate + ")scale(" + scale + ")");
+
+            this._displayPercentage(scale);
+          };
+
+          Zoom.prototype._animate = function(translate, scale) {
+            var _this = this,
+                d3Zoom = this.d3Zoom;
+
+            d3.transition().duration(350).tween("zoom", function() {
+              var iTranslate = d3.interpolate(d3Zoom.translate(), translate),
+                  iScale = d3.interpolate(d3Zoom.scale(), scale);
+
+                          return function(t) {
+                _this._update(iTranslate(t), iScale(t));
+              };
+            });
+          };
+
+          Zoom.prototype._displayPercentage = function(scale) {
+            var value;
+
+            value = Math.round(Math.log(scale) / Math.log(this.scale.max) * 100);
+            this.$info.text(value + "%");
+          };
+
+          Zoom.prototype._getScalesArray = function() {
+            var array = [],
+                scaleMaxLog = Math.log(this.scale.max);
+
+            for (var i = 0; i <= 10; i++) {
+              array.push(Math.pow(Math.E, 0.1 * i * scaleMaxLog));
+            }
+
+            return array;
+          };
+
+          Zoom.prototype._getNextScale = function(direction) {
+            var scaleSet = this.scale.set,
+                currentScale = this.d3Zoom.scale(),
+                lastShift = scaleSet.length - 1,
+                shift, temp = [];
+
+            if (this.scrolled) {
+
+              for (shift = 0; shift <= lastShift; shift++) {
+                temp.push(Math.abs(scaleSet[shift] - currentScale));
+              }
+
+              shift = temp.indexOf(Math.min.apply(null, temp));
+
+              if (currentScale >= scaleSet[shift] && shift < lastShift) {
+                shift++;
+              }
+
+              if (direction == "out" && shift > 0) {
+                shift--;
+              }
+
+              this.scrolled = false;
+
+            } else {
+
+              shift = this.scale.currentShift;
+
+              if (direction == "out") {
+                shift > 0 && shift--;
+              } else {
+                shift < lastShift && shift++;
+              }
+            }
+
+            this.scale.currentShift = shift;
+
+            return scaleSet[shift];
+          };
+
+          function DatamapObj() {
+                  this.$container = $("#worldMap");
+                  var self = this;
+                  //Show the loader
+                  self.$container.append('<img id="datamapLoader" src="img/loader.gif" class="center-block" />');
+                  //Uses the csv data to color the map
+                  d3.csv("data/survey_results_public.csv", function(error, csvData) {
+                    if (error) throw error;
+
+                    self.data = csvData;
+
+                    var csvData1 = {};
+
+                    for (var i=0;i<csvData.length;i++) {
+                            var id = countries_name_id[csvData[i].Country];
+                            csvData1[id] = {fillKey: 'gt50'};
+                    }
+
+                    //map.updateChoropleth(csvdata1);
+                    
+                    var mapWidth = self.$container.parent().width();
+                    var mapHeight = mapWidth * 34 / 50;
+
+                    self.instance = new Datamap({
+                            scope: 'world',
+                            element: self.$container.get(0),
+                            projection: 'mercator',
+                            height: mapHeight,
+                            width: mapWidth,
+                            fills: {
+                              defaultFill: '#f0af0a',
+                              gt50: 'red'
+                            },   
+
+                            data: csvData1,
+
+                            done: self._handleMapReady.bind(self)
+                    });
+              });
+          }
+
+          DatamapObj.prototype._handleMapReady = function(datamap) {
+              //Remove the loader and adds the zoom buttons
+              this.$container.find('#datamapLoader').remove();
+              this.$container.append('<div class="btn-group btn-group-sm"><button class="btn btn-primary btn-default zoom-button" data-zoom="reset">0%</button><button class="btn btn-primary btn-default zoom-button" data-zoom="out">-</button><button class="btn btn-primary btn-default zoom-button" data-zoom="in">+</button></div><span style="float:right" id="zoom-info"></span>');
+              this.zoom = new Zoom({
+                    $container: this.$container,
+                    datamap: datamap
+              });
+          }
+
+          new DatamapObj();
+	  
+     </script>
+
+        <!-- Google Analytics: change UA-XXXXX-X to be your site's ID. -->
+<!--        <script>
+            (function(b,o,i,l,e,r){b.GoogleAnalyticsObject=l;b[l]||(b[l]=
+            function(){(b[l].q=b[l].q||[]).push(arguments)});b[l].l=+new Date;
+            e=o.createElement(i);r=o.getElementsByTagName(i)[0];
+            e.src='//www.google-analytics.com/analytics.js';
+            r.parentNode.insertBefore(e,r)}(window,document,'script','ga'));
+            ga('create','UA-XXXXX-X','auto');ga('send','pageview');
+        </script>-->
+    </body>
+</html>
