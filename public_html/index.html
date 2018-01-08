@@ -53,28 +53,28 @@
       <div class="row">
         <div class="col-md-6">
           <h2>Map</h2>
+          <div class="dropdown" style="display: inline-block;">
+            <button id="attributeFilter" class="btn btn-default dropdown-toggle" type="button" data-toggle="dropdown">Job satisfaction
+            <span class="caret"></span></button>
+            <ul class="dropdown-menu">
+              <li><a href="#" onclick="attributeFilterChanged('job', this);">Job satisfaction</a></li>
+              <li><a href="#" onclick="attributeFilterChanged('career', this);">Career satisfaction</a></li>
+              <li><a href="#" onclick="attributeFilterChanged('salary', this);">Salary</a></li>
+            </ul>
+          </div>
+          <img id="datamapLoader" src="img/loader.gif" class="d-inline-block" style="display: none;height: 16px;" />
           <div id="worldMap"></div>
         </div>
         <div class="col-md-6">
-          <h2>Tech Work Type</h2>
+          <h2>Bubble Chart</h2>
           <p>Donec id elit non mi porta gravida at eget metus. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Etiam porta sem malesuada magna mollis euismod. Donec sed odio dui. </p>
           <p><a class="btn btn-default" href="#" role="button">View details &raquo;</a></p>
        </div>
       </div>
       <div class="row">
-        <div class="col-md-4">
-          <h2>Salary</h2>
-          <p>Donec sed odio dui. Cras justo odio, dapibus ac facilisis in, egestas eget quam. Vestibulum id ligula porta felis euismod semper. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus.</p>
-          <p><a class="btn btn-default" href="#" role="button">View details &raquo;</a></p>
-        </div>
-        <div class="col-md-4">
-          <h2>Education</h2>
-          <p>Donec id elit non mi porta gravida at eget metus. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Etiam porta sem malesuada magna mollis euismod. Donec sed odio dui. </p>
-          <p><a class="btn btn-default" href="#" role="button">View details &raquo;</a></p>
-        </div>
-        <div class="col-md-4">
-          <h2>Personal Traits</h2>
-          <p>Donec sed odio dui. Cras justo odio, dapibus ac facilisis in, egestas eget quam. Vestibulum id ligula porta felis euismod semper. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus.</p>
+        <div class="col-md-12">
+          <h2>Parallel coordinate plot</h2>
+          <p>Explore connections between attributes.</p>
           <p><a class="btn btn-default" href="#" role="button">View details &raquo;</a></p>
         </div>
       </div>
@@ -295,11 +295,11 @@
             return scaleSet[shift];
           };
 
-          function DatamapObj() {
+          function DatamapObj(dataType) {
                   this.$container = $("#worldMap");
                   var self = this;
                   //Show the loader
-                  self.$container.append('<img id="datamapLoader" src="img/loader.gif" class="center-block" />');
+                  $('#datamapLoader').show();
                   //Uses the csv data to color the map
                   d3.csv("data/survey_results_public.csv", function(error, csvData) {
                     if (error) throw error;
@@ -310,13 +310,29 @@
 
                     for (var i=0;i<csvData.length;i++) {
                             var id = countries_name_id[csvData[i].Country];
-                            csvData1[id] = {fillKey: 'gt50'};
+                            var countryCount = 1;
+                            switch (dataType) {
+                                case 'job':
+                                    var countryPoint = csvData[i].JobSatisfaction;
+                                    break;
+                                case 'career':
+                                    var countryPoint = csvData[i].CareerSatisfaction;
+                            }
+                            if (countryPoint != 'NA') {
+                                countryPoint = parseInt(countryPoint);
+                                if (csvData1[id]) {
+                                    countryCount = countryCount + csvData1[id].count;
+                                    countryPoint = countryPoint + csvData1[id].point;
+                                }
+                                csvData1[id] = {fillKey: 'color' + String(Math.round(countryPoint / countryCount / 2)), count: countryCount, point: countryPoint};
+                            }
                     }
-
-                    //map.updateChoropleth(csvdata1);
                     
                     var mapWidth = self.$container.parent().width();
                     var mapHeight = mapWidth * 34 / 50;
+                    
+                    self.$container.empty();
+                    $('#datamapLoader').hide();
 
                     self.instance = new Datamap({
                             scope: 'world',
@@ -325,8 +341,12 @@
                             height: mapHeight,
                             width: mapWidth,
                             fills: {
-                              defaultFill: '#f0af0a',
-                              gt50: 'red'
+                              defaultFill: 'grey',
+                              color1: '#edf8e9',
+                              color2: '#bae4b3',
+                              color3: '#74c476',
+                              color4: '#31a354',
+                              color5: '#006d2c'
                             },   
 
                             data: csvData1,
@@ -338,15 +358,21 @@
 
           DatamapObj.prototype._handleMapReady = function(datamap) {
               //Remove the loader and adds the zoom buttons
-              this.$container.find('#datamapLoader').remove();
-              this.$container.append('<div class="btn-group btn-group-sm"><button class="btn btn-primary btn-default zoom-button" data-zoom="reset">0%</button><button class="btn btn-primary btn-default zoom-button" data-zoom="out">-</button><button class="btn btn-primary btn-default zoom-button" data-zoom="in">+</button></div><span style="float:right" id="zoom-info"></span>');
+              this.$container.find('#datamapLoader').hide();
+              this.$container.append('<div class="d-inline-block btn-group btn-group-sm"><button class="btn btn-default zoom-button" data-zoom="reset">0%</button><button class="btn btn-default zoom-button" data-zoom="out">-</button><button class="btn btn-default zoom-button" data-zoom="in">+</button></div><span style="margin-left: 5px;" id="zoom-info"></span>');
+              //Add the legend for colors
               this.zoom = new Zoom({
                     $container: this.$container,
                     datamap: datamap
               });
           }
 
-          new DatamapObj();
+          var map = new DatamapObj('job');
+          
+          function attributeFilterChanged(dataType, self) {
+              $('#attributeFilter').html($(self).text()+' <span class="caret"></span>');
+              new DatamapObj(dataType);
+          }
 	  
      </script>
 
