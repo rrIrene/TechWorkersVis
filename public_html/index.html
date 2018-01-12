@@ -36,7 +36,7 @@
             <span class="icon-bar"></span>
             <span class="icon-bar"></span>
           </button>
-          <a class="navbar-brand" href="#">Tech Workers Visualization</a>
+          <a class="navbar-brand" href="#">Tech Workers Wellbeing Visualization</a>
         </div>
       </div>
     </nav>
@@ -65,10 +65,10 @@
           <img id="datamapLoader" src="img/loader.gif" class="d-inline-block" style="display: none;height: 16px;" />
           <div id="worldMap"></div>
         </div>
-        <div class="col-md-6">
+        <div class="col-md-3">
           <h2>Bubble Chart</h2>
-          <p>Donec id elit non mi porta gravida at eget metus. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Etiam porta sem malesuada magna mollis euismod. Donec sed odio dui. </p>
-          <p><a class="btn btn-default" href="#" role="button">View details &raquo;</a></p>
+          <div id="bubbleChart"></div>
+<!--          <p><a class="btn btn-default" href="#" role="button">View details &raquo;</a></p>-->
        </div>
       </div>
       <div class="row">
@@ -97,7 +97,10 @@
         <script src="js/vendor/topojson.v1.js"></script>        
         <script src="js/vendor/datamaps.world.hires.js"></script>
         
-        <script>	  
+        <script>	
+          
+          //Start world map with Datamap and Zoom
+          
 	  var countries_name_id = {};
 	  var countries_id_name = {};
 	  for (var i=0;i<Datamap.prototype.worldTopo.objects.world.geometries.length;i++) {
@@ -311,12 +314,17 @@
                     for (var i=0;i<csvData.length;i++) {
                             var id = countries_name_id[csvData[i].Country];
                             var countryCount = 1;
+                            var roundValue = 2;
                             switch (dataType) {
                                 case 'job':
                                     var countryPoint = csvData[i].JobSatisfaction;
                                     break;
                                 case 'career':
                                     var countryPoint = csvData[i].CareerSatisfaction;
+                                    break;
+                                case 'salary':
+                                    var countryPoint = csvData[i].Salary;
+                                    roundValue = 10000;
                             }
                             if (countryPoint != 'NA') {
                                 countryPoint = parseInt(countryPoint);
@@ -324,7 +332,10 @@
                                     countryCount = countryCount + csvData1[id].count;
                                     countryPoint = countryPoint + csvData1[id].point;
                                 }
-                                csvData1[id] = {fillKey: 'color' + String(Math.round(countryPoint / countryCount / 2)), count: countryCount, point: countryPoint};
+                                var colorValue = Math.round(countryPoint / countryCount / roundValue);
+                                if (colorValue > 5) colorValue = 5;
+                                else if (colorValue < 1) colorValue = 1;
+                                csvData1[id] = {fillKey: 'color' + String(colorValue), count: countryCount, point: countryPoint};
                             }
                     }
                     
@@ -348,6 +359,10 @@
                               color4: '#31a354',
                               color5: '#006d2c'
                             },   
+                            
+                            geographyConfig: {
+                                borderColor: '#333'
+                            },
 
                             data: csvData1,
 
@@ -365,16 +380,132 @@
                     $container: this.$container,
                     datamap: datamap
               });
+              //Add click handler on countries
+            datamap.svg.selectAll(".datamaps-subunit").on('click', function(geography) {
+                var updateData = {};
+                if (this.selectedCountry) {   
+                    updateData[this.selectedCountry.id] = {fillKey: this.selectedCountry.originalColor};
+                }
+                this.selectedCountry = geography;
+            });
           }
 
           var map = new DatamapObj('job');
           
           function attributeFilterChanged(dataType, self) {
               $('#attributeFilter').html($(self).text()+' <span class="caret"></span>');
-              new DatamapObj(dataType);
+              map = new DatamapObj(dataType);
           }
+          
+          //End world map
 	  
      </script>
+     
+     <script>
+        var height = 400;
+        var width = 600;
+        var margin = 40;
+        var data =[];
+        for(var i = 0; i < 42; i++) {
+                data.push({
+                x: Math.random() * 400,
+                y: Math.random() * 100,
+                c: Math.round(Math.random() * 5),
+                size: Math.random() * 200,
+                });
+        }
+
+        var labelX = 'X';
+        var labelY = 'Y';
+        var svg = d3.select('#bubbleChart')
+                            .append('svg')
+                            .attr('class', 'chart')
+                            .attr("width", width + margin + margin)
+                            .attr("height", height + margin + margin)
+                            .append("g")
+                            .attr("transform", "translate(" + margin + "," + margin + ")");
+
+        var x = d3.scale.linear()
+                                                            .domain([d3.min(data, function (d) { return d.x; }), d3.max(data, function (d) { return d.x; })])
+                                                            .range([0, width]);
+
+        var y = d3.scale.linear()
+                                                            .domain([d3.min(data, function (d) { return d.y; }), d3.max(data, function (d) { return d.y; })])
+                                                            .range([height, 0]);
+
+        var scale = d3.scale.sqrt()
+                                                            .domain([d3.min(data, function (d) { return d.size; }), d3.max(data, function (d) { return d.size; })])
+                                                            .range([1, 20]);
+
+        var opacity = d3.scale.sqrt()
+                                                            .domain([d3.min(data, function (d) { return d.size; }), d3.max(data, function (d) { return d.size; })])
+                                                            .range([1, .5]);
+
+        var color = d3.scale.category10();
+
+        var xAxis = d3.svg.axis().scale(x);
+         var yAxis = d3.svg.axis().scale(y).orient("left");
+
+          svg.append("g")
+                                                        .attr("class", "y axis")
+                                                        .call(yAxis)
+                                                        .append("text")
+                                                                .attr("transform", "rotate(-90)")
+                                                                .attr("x", 20)
+                                                                .attr("y", -margin)
+                                                                .attr("dy", ".71em")
+                                                                .style("text-anchor", "end")
+                                                                .text(labelY);
+                                  // x axis and label
+                                  svg.append("g")
+                                      .attr("class", "x axis")
+                                      .attr("transform", "translate(0," + height + ")")
+                                      .call(xAxis)
+                                      .append("text")
+                                          .attr("x", width + 20)
+                                          .attr("y", margin - 10)
+                                          .attr("dy", ".71em")
+                                          .style("text-anchor", "end")
+                                          .text(labelX);
+
+        svg.selectAll("circle")
+                                      .data(data)
+                                      .enter()
+                                      .insert("circle")
+                                      .attr("cx", width / 2)
+                                      .attr("cy", height / 2)
+                                      .attr("opacity", function (d) { return opacity(d.size); })
+                                      .attr("r", function (d) { return scale(d.size); })
+                                      .style("fill", function (d) { return color(d.c); })
+                                      .on('mouseover', function (d, i) {
+                                          fade(d.c, .1);
+                                      })
+                                     .on('mouseout', function (d, i) {
+                                         fadeOut();
+                                     })
+                                     .transition()
+                                    .delay(function (d, i) { return x(d.x) - y(d.y); })
+                                    .duration(500)
+                                    .attr("cx", function (d) { return x(d.x); })
+                                    .attr("cy", function (d) { return y(d.y); })
+                                    .ease("bounce");
+
+
+        function fade(c, opacity) {
+                                      svg.selectAll("circle")
+                                          .filter(function (d) {
+                                              return d.c != c;
+                                          })
+                                        .transition()
+                                         .style("opacity", opacity);
+                                  }
+
+                                  function fadeOut() {
+                                      svg.selectAll("circle")
+                                      .transition()
+                                         .style("opacity", function (d) { opacity(d.size); });
+                                  }
+        </script>
 
         <!-- Google Analytics: change UA-XXXXX-X to be your site's ID. -->
 <!--        <script>
