@@ -52,6 +52,18 @@
       <!-- Example row of columns -->
       <div class="row">
         <div class="col-md-6">
+          <h2>Bubble chart</h2>
+          <div id="bubbleChart"></div>
+          <p><a class="btn btn-default" href="#" role="button">Change axes &raquo;</a></p>
+        </div>          
+        <div class="col-md-6">
+          <h2>Parallel coordinate</h2>
+          <p>Explore connections between attributes.</p>
+          <p><a class="btn btn-default" href="#" role="button">View details &raquo;</a></p>
+        </div>          
+      </div>
+      <div class="row">
+        <div class="col-md-10">
           <h2>Map</h2>
           <div class="dropdown" style="display: inline-block;">
             <button id="attributeFilter" class="btn btn-default dropdown-toggle" type="button" data-toggle="dropdown">Job satisfaction
@@ -62,20 +74,14 @@
               <li><a href="#" onclick="attributeFilterChanged('salary', this);">Salary</a></li>
             </ul>
           </div>
+          <span style="margin-left: 5px; display: none;" class="pull-right align-middle" id="zoom-info"></span>
+          <div id="zoomBtns" class="btn-group btn-group-sm pull-right" style="display: none;">
+              <button class="btn btn-default zoom-button" data-zoom="reset">0%</button>
+              <button class="btn btn-default zoom-button" data-zoom="out">-</button>
+              <button class="btn btn-default zoom-button" data-zoom="in">+</button>
+          </div>
           <img id="datamapLoader" src="img/loader.gif" class="d-inline-block" style="display: none;height: 16px;" />
           <div id="worldMap"></div>
-        </div>
-        <div class="col-md-3">
-          <h2>Bubble Chart</h2>
-          <div id="bubbleChart"></div>
-<!--          <p><a class="btn btn-default" href="#" role="button">View details &raquo;</a></p>-->
-       </div>
-      </div>
-      <div class="row">
-        <div class="col-md-12">
-          <h2>Parallel coordinate plot</h2>
-          <p>Explore connections between attributes.</p>
-          <p><a class="btn btn-default" href="#" role="button">View details &raquo;</a></p>
         </div>
       </div>
 
@@ -303,6 +309,9 @@
                   var self = this;
                   //Show the loader
                   $('#datamapLoader').show();
+                  //Hide zoom buttons
+                  $('#zoomBtns').hide();
+                  $('#zoom-info').hide();
                   //Uses the csv data to color the map
                   d3.csv("data/survey_results_public.csv", function(error, csvData) {
                     if (error) throw error;
@@ -310,6 +319,24 @@
                     self.data = csvData;
 
                     var csvData1 = {};
+                    
+                    if (dataType == 'salary') {
+                        self.legendLabels = {
+                            color1: '$0-$10,000',
+                            color2: '$10,000-$20,000',
+                            color3: '$30,000-$40,000',
+                            color4: '$40,000-$50,000',
+                            color5: '> $50,000'
+                        };
+                    } else {                        
+                        self.legendLabels = {
+                            color1: '1-2',
+                            color2: '3-4',
+                            color3: '5-6',
+                            color4: '7-8',
+                            color5: '9-10'
+                        };
+                    }
 
                     for (var i=0;i<csvData.length;i++) {
                             var id = countries_name_id[csvData[i].Country];
@@ -372,21 +399,31 @@
           }
 
           DatamapObj.prototype._handleMapReady = function(datamap) {
+                //Added the legends    
+                datamap.legend({
+                    defaultFillName: "No data",
+                    labels: this.legendLabels
+                });
               //Remove the loader and adds the zoom buttons
               this.$container.find('#datamapLoader').hide();
-              this.$container.append('<div class="d-inline-block btn-group btn-group-sm"><button class="btn btn-default zoom-button" data-zoom="reset">0%</button><button class="btn btn-default zoom-button" data-zoom="out">-</button><button class="btn btn-default zoom-button" data-zoom="in">+</button></div><span style="margin-left: 5px;" id="zoom-info"></span>');
+              $('#zoomBtns').show();
+              $('#zoom-info').show();
               //Add the legend for colors
               this.zoom = new Zoom({
                     $container: this.$container,
                     datamap: datamap
               });
+              var self = this;
               //Add click handler on countries
             datamap.svg.selectAll(".datamaps-subunit").on('click', function(geography) {
                 var updateData = {};
-                if (this.selectedCountry) {   
-                    updateData[this.selectedCountry.id] = {fillKey: this.selectedCountry.originalColor};
+                updateData[geography.id] = '#FF7C4C';
+                if (self.selectedCountry) {   
+                    updateData[self.selectedCountry.id] = {fillKey: self.selectedCountry.oriColor};
                 }
-                this.selectedCountry = geography;
+                self.selectedCountry = geography;
+                self.selectedCountry.oriColor = self.instance.data[geography.id].fillKey;
+                self.instance.updateChoropleth(updateData);
             });
           }
 
@@ -402,8 +439,8 @@
      </script>
      
      <script>
-        var height = 400;
-        var width = 600;
+        var width = 150;
+        var height = width;
         var margin = 40;
         var data =[];
         for(var i = 0; i < 42; i++) {
