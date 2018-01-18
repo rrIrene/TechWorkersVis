@@ -51,11 +51,18 @@
     <div class="container">
       <!-- Example row of columns -->
       <div class="row">
-        <div class="col-md-6">
+<!--        <div class="col-md-6">
           <h2>Bubble chart</h2>
           <div id="bubbleChart"></div>
           <p><a class="btn btn-default" href="#" role="button">Change axes &raquo;</a></p>
-        </div>          
+        </div>-->
+        <div class="col-md-6">
+          <h2>Bubble chart</h2>
+          <div id="chart">
+              <svg></svg>
+          </div>
+          <p><a class="btn btn-default" href="#" role="button">Change axes &raquo;</a></p>
+        </div>
         <div class="col-md-6">
           <h2>Parallel coordinate</h2>
           <p>Explore connections between attributes.</p>
@@ -342,16 +349,18 @@
                             var id = countries_name_id[csvData[i].Country];
                             var countryCount = 1;
                             var roundValue = 2;
+                            var countryPoint = 'NA';
                             switch (dataType) {
                                 case 'job':
-                                    var countryPoint = csvData[i].JobSatisfaction;
+                                    countryPoint = csvData[i].JobSatisfaction;
                                     break;
                                 case 'career':
-                                    var countryPoint = csvData[i].CareerSatisfaction;
+                                    countryPoint = csvData[i].CareerSatisfaction;
                                     break;
                                 case 'salary':
-                                    var countryPoint = csvData[i].Salary;
+                                    countryPoint = csvData[i].Salary;
                                     roundValue = 10000;
+                                    break;
                             }
                             if (countryPoint != 'NA') {
                                 countryPoint = parseInt(countryPoint);
@@ -543,6 +552,81 @@
                                          .style("opacity", function (d) { opacity(d.size); });
                                   }
         </script>
+            <script type="text/javascript" src="https://cdn.rawgit.com/novus/nvd3/v1.8.1/build/nv.d3.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://cdn.rawgit.com/novus/nvd3/v1.8.1/build/nv.d3.css">
+    <script type="text/javascript">
+    
+    
+    
+//    function parseJobData(csvData) {
+//        var job_data = [{"JobSatisfaction":9 ,"Salary":100000 ,"Experience": 20},
+//                        {"JobSatisfaction":5 ,"Salary":75000 ,"Experience": 10},
+//                        {"JobSatisfaction":14 ,"Salary":50000 ,"Experience": 5}];
+//                    
+//        return job_data;
+//    }
+    
+    function createChartData(jobData) {
+        var group_data = {};
+
+          for (var j = 0; j < jobData.length; j++) {
+              
+                if (!(group_data[jobData[j].DevTypeF])) {
+//                    console.log(group_data);
+                    group_data[jobData[j].DevTypeF] = {
+                            key: jobData[j].DevTypeF,
+                            values: []};
+                }
+                
+                group_data[jobData[j].DevTypeF].values.push({            
+                    x: jobData[j].Salary,
+                    y: jobData[j].JobSatisfaction,
+                    size: 20//jobData[j].Experience
+                });       
+            }
+            
+          var array = $.map(group_data ,function(value, index) {
+            return [value];
+            });
+            return array;
+        }
+
+
+    function drawChart(jobData) {
+        nv.addGraph(function() {
+            var chart = nv.models.scatterChart()
+                          .showDistX(true)
+                          .showDistY(true)
+                          .color(d3.scale.category10().range());
+
+            chart.xAxis.tickFormat(d3.format('.02f'));
+            chart.yAxis.tickFormat(d3.format('.02f'));
+            chart.yAxis.tickValues(['2','4','8','16','32']);
+
+            chart.tooltipContent( function(key, x, y){ 
+                    return key;
+                });
+
+            d3.select('#chart svg')
+                .datum(jobData)
+                .attr("width", 400)
+                .attr("height", 400)
+                .transition().duration(500)
+                .call(chart);
+
+            nv.utils.windowResize(chart.update);
+            return chart;
+
+            });   
+    }
+    
+    d3.json("data/test3.json", function(error, jsonData) {
+        if (error) return console.warn(error);
+        var chartData = createChartData(jsonData);
+        drawChart(chartData);
+        });
+
+    </script>
 
         <!-- Google Analytics: change UA-XXXXX-X to be your site's ID. -->
 <!--        <script>
