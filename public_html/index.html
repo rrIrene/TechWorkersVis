@@ -17,6 +17,39 @@
                 padding-top: 50px;
                 padding-bottom: 20px;
             }
+            
+            #worldMap svg g .datamaps-subunit {
+                cursor: pointer;
+            }
+
+            .background path {
+              fill: none;
+              stroke: #ddd;
+              shape-rendering: crispEdges;
+            }
+
+            .foreground path {
+              fill: none;
+              stroke: steelblue;
+            }
+
+            .brush .extent {
+              fill-opacity: .3;
+              stroke: #fff;
+              shape-rendering: crispEdges;
+            }
+
+            .axis line,
+            .axis path {
+              fill: none;
+              stroke: #000;
+              shape-rendering: crispEdges;
+            }
+
+            .axis text {
+              text-shadow: 0 1px 0 #fff, 1px 0 0 #fff, 0 -1px 0 #fff, -1px 0 0 #fff;
+              cursor: move;
+            }
         </style>
         <link rel="stylesheet" href="css/bootstrap-theme.min.css">
         <link rel="stylesheet" href="css/main.css">
@@ -36,7 +69,7 @@
             <span class="icon-bar"></span>
             <span class="icon-bar"></span>
           </button>
-          <a class="navbar-brand" href="#">Tech Workers Wellbeing Visualization</a>
+          <a class="navbar-brand" href="#">Tech Workers Visualization</a>
         </div>
       </div>
     </nav>
@@ -65,8 +98,7 @@
         </div>
         <div class="col-md-6">
           <h2>Parallel coordinate</h2>
-          <p>Explore connections between attributes.</p>
-          <p><a class="btn btn-default" href="#" role="button">View details &raquo;</a></p>
+          <div id="pcPlot"></div>
         </div>          
       </div>
       <div class="row">
@@ -78,7 +110,7 @@
             <ul class="dropdown-menu">
               <li><a href="#" onclick="attributeFilterChanged('job', this);">Job satisfaction</a></li>
               <li><a href="#" onclick="attributeFilterChanged('career', this);">Career satisfaction</a></li>
-              <li><a href="#" onclick="attributeFilterChanged('salary', this);">Salary</a></li>
+              <!--<li><a href="#" onclick="attributeFilterChanged('salary', this);">Salary</a></li>-->
             </ul>
           </div>
           <span style="margin-left: 5px; display: none;" class="pull-right align-middle" id="zoom-info"></span>
@@ -105,6 +137,7 @@
         <script src="js/vendor/bootstrap.min.js"></script>
 
         <script src="js/main.js"></script>
+        <script src="js/pcp.js"></script>
         
         <script src="js/vendor/d3.v3.js"></script>        
         <script src="js/vendor/topojson.v1.js"></script>        
@@ -397,6 +430,7 @@
                             },   
                             
                             geographyConfig: {
+                                highlightOnHover: false,
                                 borderColor: '#333'
                             },
 
@@ -424,16 +458,37 @@
               });
               var self = this;
               //Add click handler on countries
-            datamap.svg.selectAll(".datamaps-subunit").on('click', function(geography) {
+            datamap.svg.selectAll(".datamaps-subunit").on('click', function(geography, evt) {
                 var updateData = {};
-                updateData[geography.id] = '#FF7C4C';
-                if (self.selectedCountry) {   
-                    updateData[self.selectedCountry.id] = {fillKey: self.selectedCountry.oriColor};
+                var dataInfo = self.instance.svg.select('.' + geography.id).attr('data-info');
+                if (dataInfo) { //This prevents country with no data being colored.
+                    updateData[geography.id] = {fillColor: 'red'};
+                    if (self.selectedCountry) {
+                        if (self.selectedCountry.id == geography.id) {
+                            d3.event.stopPropagation();
+                            return;
+                        }
+                        updateData[self.selectedCountry.id] = {'fillKey': self.selectedCountry.fillKey};
+                    } else {
+                        self.selectedCountry = {};
+                    }
+                    self.selectedCountry.id = geography.id;
+                    self.selectedCountry.fillKey = JSON.parse(dataInfo).fillKey;
+                    self.instance.updateChoropleth(updateData);
                 }
-                self.selectedCountry = geography;
-                self.selectedCountry.oriColor = self.instance.data[geography.id].fillKey;
-                self.instance.updateChoropleth(updateData);
+                d3.event.stopPropagation();
             });
+            datamap.svg.on('click', function(evt) {
+                //This handles click event on the map, but not on a specific country.
+                //Use this to reset selection
+                if (self.selectedCountry) {
+                    var updateData = {};
+                    updateData[self.selectedCountry.id] = {'fillKey': self.selectedCountry.fillKey};
+                    self.selectedCountry = null;
+                    self.instance.updateChoropleth(updateData);
+                }
+            });
+            //createParallelCoordinatesPlot();
           }
 
           var map = new DatamapObj('job');
