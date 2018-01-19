@@ -61,7 +61,10 @@ PCPlot.prototype.init = function() {
         .alpha(0.2)
         .margin({ top: 24, left: 0, bottom: 12, right: 0 })
         .render()
-        .reorderable();
+        .reorderable()
+        .brushMode("1D-axes")   //this option gives highlight function
+        .alphaOnBrushed(1)
+        .brushedColor("red");
 
     //Correct the appearance of the plot
     $('#pcPlot canvas').css('position', 'absolute');
