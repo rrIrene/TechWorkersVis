@@ -18,10 +18,16 @@
                 padding-bottom: 20px;
             }
             
-            #worldMap svg g .datamaps-subunit {
+            #countryFilter {
+                height: auto;
+                max-height: 200px;
+                overflow-x: hidden;
+            }
+            
+            .datamaps-subunit {
                 cursor: pointer;
             }
-
+                        
             .background path {
               fill: none;
               stroke: #ddd;
@@ -50,6 +56,10 @@
               text-shadow: 0 1px 0 #fff, 1px 0 0 #fff, 0 -1px 0 #fff, -1px 0 0 #fff;
               cursor: move;
             }
+            
+            #pcPlot g g g.tick test {
+                font-size: xx-small;
+            }
         </style>
         <link rel="stylesheet" href="css/bootstrap-theme.min.css">
         <link rel="stylesheet" href="css/main.css">
@@ -71,6 +81,16 @@
           </button>
           <a class="navbar-brand" href="#">Tech Workers Visualization</a>
         </div>
+          <!-- Collect the nav links, forms, and other content for toggling -->
+          <div class="collapse navbar-collapse navbar-right" id="bs-example-navbar-collapse-1">
+              <ul class="nav navbar-nav">
+                  <li class="dropdown">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false" >Select country...<span class="caret"></span></a>
+                    <ul class="dropdown-menu" id="countryFilter">
+                    </ul>
+                  </li>
+              </ul>
+          </div>
       </div>
     </nav>
 
@@ -84,25 +104,7 @@
     <div class="container">
       <!-- Example row of columns -->
       <div class="row">
-<!--        <div class="col-md-6">
-          <h2>Bubble chart</h2>
-          <div id="bubbleChart"></div>
-          <p><a class="btn btn-default" href="#" role="button">Change axes &raquo;</a></p>
-        </div>-->
-        <div class="col-md-6">
-          <h2>Bubble chart</h2>
-          <div id="chart">
-              <svg></svg>
-          </div>
-          <p><a class="btn btn-default" href="#" role="button">Change axes &raquo;</a></p>
-        </div>
-        <div class="col-md-6">
-          <h2>Parallel coordinate</h2>
-          <div id="pcPlot"></div>
-        </div>          
-      </div>
-      <div class="row">
-        <div class="col-md-10">
+        <div class="col-md-8">
           <h2>Map</h2>
           <div class="dropdown" style="display: inline-block;">
             <button id="attributeFilter" class="btn btn-default dropdown-toggle" type="button" data-toggle="dropdown">Job satisfaction
@@ -122,6 +124,21 @@
           <img id="datamapLoader" src="img/loader.gif" class="d-inline-block" style="display: none;height: 16px;" />
           <div id="worldMap"></div>
         </div>
+        <div class="col-md-4">
+          <h2>Bubble chart</h2>
+          <!--<p><a class="btn btn-default" href="#" role="button">Change axes &raquo;</a></p>-->
+          <div id="chart">
+              <svg></svg>
+          </div>
+        </div>   
+      </div>
+      <div class="row">
+        <div class="col-md-12">
+          <h2>Parallel coordinate</h2>
+          <!--<p><a id="pcpBtn" class="btn btn-default" href="#" role="button" style="display: none;">Change axes &raquo;</a></p>-->
+          <div id="pcPlot"></div>
+          <p id="pcPlotMsg">Select a country to explore attributes.</p>
+        </div>  
       </div>
 
       <hr>
@@ -141,8 +158,8 @@
         
         <script src="js/vendor/d3.v3.js"></script>        
         <script src="js/vendor/topojson.v1.js"></script>        
-        <script src="js/vendor/datamaps.world.hires.js"></script>
-        
+        <script src="js/vendor/datamaps.world.hires.js"></script>    
+        <script src="js/vendor/d3.parcoords.js"></script>        
         <script>	
           
           //Start world map with Datamap and Zoom
@@ -152,7 +169,9 @@
 	  for (var i=0;i<Datamap.prototype.worldTopo.objects.world.geometries.length;i++) {
 		var prop = Datamap.prototype.worldTopo.objects.world.geometries[i].properties;
 		countries_name_id[prop.name] = prop.iso;
-		countries_id_name[prop.id] = prop.name;
+		countries_id_name[prop.iso] = prop.name;
+                //Add the country name to the filter
+                $('#countryFilter').append('<li><a href="#" onclick="map._handleFilterSelected(\'' + prop.iso + '\',\'' + prop.name + '\');">' + prop.name + '</a></li>')
 	  }
           
           function Zoom(args) {
@@ -357,6 +376,7 @@
                     if (error) throw error;
 
                     self.data = csvData;
+                    self.type = dataType;
 
                     var csvData1 = {};
                     
@@ -447,6 +467,9 @@
                     defaultFillName: "No data",
                     labels: this.legendLabels
                 });
+                //Adjust the legends' position
+                $('.datamaps-legend').css('left', String(this.$container.width() + 20) + 'px');
+                $('.datamaps-legend').css('top', String(this.$container.parent().height() - this.$container.height()) + 'px');
               //Remove the loader and adds the zoom buttons
               this.$container.find('#datamapLoader').hide();
               $('#zoomBtns').show();
@@ -459,36 +482,46 @@
               var self = this;
               //Add click handler on countries
             datamap.svg.selectAll(".datamaps-subunit").on('click', function(geography, evt) {
-                var updateData = {};
-                var dataInfo = self.instance.svg.select('.' + geography.id).attr('data-info');
-                if (dataInfo) { //This prevents country with no data being colored.
-                    updateData[geography.id] = {fillColor: 'red'};
-                    if (self.selectedCountry) {
-                        if (self.selectedCountry.id == geography.id) {
-                            d3.event.stopPropagation();
-                            return;
-                        }
-                        updateData[self.selectedCountry.id] = {'fillKey': self.selectedCountry.fillKey};
-                    } else {
-                        self.selectedCountry = {};
-                    }
-                    self.selectedCountry.id = geography.id;
-                    self.selectedCountry.fillKey = JSON.parse(dataInfo).fillKey;
-                    self.instance.updateChoropleth(updateData);
-                }
+                self._handleFilterSelected(geography.id, geography.properties.name)
                 d3.event.stopPropagation();
             });
             datamap.svg.on('click', function(evt) {
                 //This handles click event on the map, but not on a specific country.
                 //Use this to reset selection
-                if (self.selectedCountry) {
-                    var updateData = {};
-                    updateData[self.selectedCountry.id] = {'fillKey': self.selectedCountry.fillKey};
-                    self.selectedCountry = null;
-                    self.instance.updateChoropleth(updateData);
-                }
+                self._handleFilterReset();
             });
-            //createParallelCoordinatesPlot();
+          }
+          
+          DatamapObj.prototype._handleFilterSelected = function(id, name) {
+                var dataInfo = this.instance.svg.select('.' + id).attr('data-info');
+                if (dataInfo) { //This prevents country with no data being colored.
+                    var updateData = {};
+                    updateData[id] = {fillColor: 'red'};
+                    if (this.selectedCountry) {
+                      if (this.selectedCountry.id == id) {
+                          d3.event.stopPropagation();
+                          return;
+                      }
+                      updateData[this.selectedCountry.id] = {'fillKey': this.selectedCountry.fillKey};
+                    } else {
+                      this.selectedCountry = {};
+                    }
+                    this.selectedCountry.id = id;
+                    this.selectedCountry.name = name;
+                    this.selectedCountry.fillKey = JSON.parse(dataInfo).fillKey;
+                    this.instance.updateChoropleth(updateData);
+                    updateViews();
+                }
+          }        
+          
+          DatamapObj.prototype._handleFilterReset = function() {
+              if (this.selectedCountry) {
+                    var updateData = {};
+                    updateData[this.selectedCountry.id] = {'fillKey': this.selectedCountry.fillKey};
+                    this.selectedCountry = null;
+                    this.instance.updateChoropleth(updateData);
+                    updateViews();
+                }
           }
 
           var map = new DatamapObj('job');
@@ -496,118 +529,13 @@
           function attributeFilterChanged(dataType, self) {
               $('#attributeFilter').html($(self).text()+' <span class="caret"></span>');
               map = new DatamapObj(dataType);
+              updateViews();
           }
           
           //End world map
 	  
      </script>
-     
-     <script>
-        var width = 150;
-        var height = width;
-        var margin = 40;
-        var data =[];
-        for(var i = 0; i < 42; i++) {
-                data.push({
-                x: Math.random() * 400,
-                y: Math.random() * 100,
-                c: Math.round(Math.random() * 5),
-                size: Math.random() * 200,
-                });
-        }
-
-        var labelX = 'X';
-        var labelY = 'Y';
-        var svg = d3.select('#bubbleChart')
-                            .append('svg')
-                            .attr('class', 'chart')
-                            .attr("width", width + margin + margin)
-                            .attr("height", height + margin + margin)
-                            .append("g")
-                            .attr("transform", "translate(" + margin + "," + margin + ")");
-
-        var x = d3.scale.linear()
-                                                            .domain([d3.min(data, function (d) { return d.x; }), d3.max(data, function (d) { return d.x; })])
-                                                            .range([0, width]);
-
-        var y = d3.scale.linear()
-                                                            .domain([d3.min(data, function (d) { return d.y; }), d3.max(data, function (d) { return d.y; })])
-                                                            .range([height, 0]);
-
-        var scale = d3.scale.sqrt()
-                                                            .domain([d3.min(data, function (d) { return d.size; }), d3.max(data, function (d) { return d.size; })])
-                                                            .range([1, 20]);
-
-        var opacity = d3.scale.sqrt()
-                                                            .domain([d3.min(data, function (d) { return d.size; }), d3.max(data, function (d) { return d.size; })])
-                                                            .range([1, .5]);
-
-        var color = d3.scale.category10();
-
-        var xAxis = d3.svg.axis().scale(x);
-         var yAxis = d3.svg.axis().scale(y).orient("left");
-
-          svg.append("g")
-                                                        .attr("class", "y axis")
-                                                        .call(yAxis)
-                                                        .append("text")
-                                                                .attr("transform", "rotate(-90)")
-                                                                .attr("x", 20)
-                                                                .attr("y", -margin)
-                                                                .attr("dy", ".71em")
-                                                                .style("text-anchor", "end")
-                                                                .text(labelY);
-                                  // x axis and label
-                                  svg.append("g")
-                                      .attr("class", "x axis")
-                                      .attr("transform", "translate(0," + height + ")")
-                                      .call(xAxis)
-                                      .append("text")
-                                          .attr("x", width + 20)
-                                          .attr("y", margin - 10)
-                                          .attr("dy", ".71em")
-                                          .style("text-anchor", "end")
-                                          .text(labelX);
-
-        svg.selectAll("circle")
-                                      .data(data)
-                                      .enter()
-                                      .insert("circle")
-                                      .attr("cx", width / 2)
-                                      .attr("cy", height / 2)
-                                      .attr("opacity", function (d) { return opacity(d.size); })
-                                      .attr("r", function (d) { return scale(d.size); })
-                                      .style("fill", function (d) { return color(d.c); })
-                                      .on('mouseover', function (d, i) {
-                                          fade(d.c, .1);
-                                      })
-                                     .on('mouseout', function (d, i) {
-                                         fadeOut();
-                                     })
-                                     .transition()
-                                    .delay(function (d, i) { return x(d.x) - y(d.y); })
-                                    .duration(500)
-                                    .attr("cx", function (d) { return x(d.x); })
-                                    .attr("cy", function (d) { return y(d.y); })
-                                    .ease("bounce");
-
-
-        function fade(c, opacity) {
-                                      svg.selectAll("circle")
-                                          .filter(function (d) {
-                                              return d.c != c;
-                                          })
-                                        .transition()
-                                         .style("opacity", opacity);
-                                  }
-
-                                  function fadeOut() {
-                                      svg.selectAll("circle")
-                                      .transition()
-                                         .style("opacity", function (d) { opacity(d.size); });
-                                  }
-        </script>
-            <script type="text/javascript" src="https://cdn.rawgit.com/novus/nvd3/v1.8.1/build/nv.d3.min.js"></script>
+     <script type="text/javascript" src="https://cdn.rawgit.com/novus/nvd3/v1.8.1/build/nv.d3.min.js"></script>
     <link rel="stylesheet" type="text/css" href="https://cdn.rawgit.com/novus/nvd3/v1.8.1/build/nv.d3.css">
     <script type="text/javascript">
     

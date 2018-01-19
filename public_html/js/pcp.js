@@ -4,126 +4,77 @@
  * and open the template in the editor.
  */
 
-function createParallelCoordinatesPlot() {
-    var margin = {top: 30, right: 10, bottom: 10, left: 10},
-    width = $("#pcPlot").width() - margin.left - margin.right,
-    height = (width * 50 / 96) - margin.top - margin.bottom;
+function PCPlot(args) {
+    $.extend(this, args);
+    this.init();
+}
 
-    var x = d3.scale.ordinal().rangePoints([0, width], 1),
-        y = {},
-        dragging = {};
-
-    var axis = d3.svg.axis().orient("left"),
-        background,
-        foreground;
-
-    var svg = d3.select("#pcPlot").append("svg")
-        .attr("width", width + margin.left + margin.right)
-        .attr("height", height + margin.top + margin.bottom)
-      .append("g")
-        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-
-    var cars = map.data;
+/* Creates the parallel coordinates plot for the specified country and 'job' or 'career' satisfaction.
+ * 
+ * @param {string} country
+ * @param {string} satisfaction
+ * @return {undefined}
+ */
+PCPlot.prototype.init = function() {
+    $('#pcPlotMsg').hide();
+    $('#pcPlot').height(($('#pcPlot').width() / 2) - 10);
+       
+//    var data2 = d3.range(0,2*Math.PI,Math.PI/40)
+//        .map(function(x) {
+//          return {
+//            "-x": -x,
+//            x: x,
+//            "sin(x)": Math.sin(x),
+//            "cos(x)": Math.cos(x),
+//            "atan(x)": Math.atan(x),
+//            "exp(x)": Math.exp(x),
+//            "square(x)": x*x,
+//            "sqrt(x)": Math.sqrt(x),
+//          };
+//        });
     
-    // Extract the list of dimensions and create a scale for each.
-    x.domain(dimensions = d3.keys(cars[0]).filter(function(d) {
-      return d != "name" && (y[d] = d3.scale.linear()
-          .domain(d3.extent(cars, function(p) { return +p[d]; }))
-          .range([height, 0]));
-    }));
+    //Filter the data to only the filtered country
+    var self = this;
+    this.data = this.data.filter(function(row) {
+        if (row.Country === self.country)  return row;
+    });
+    
+    //Now filter to only the default columns
+    this.data = this.data.map(function(d) {
+        var newColumns = {};
+        if (self.satisfactionType === 'job')
+            newColumns['JobSatisfaction'] = d.JobSatisfaction;
+        else if (self.satisfactionType === 'career')
+            newColumns['CareerSatisfaction'] = d.CareerSatisfaction;
+        newColumns['Overpaid'] = d.Overpaid;
+        newColumns['CompanyType'] = d.CompanyType;
+        newColumns['CompanySize'] = d.CompanySize;
+        
+        return newColumns;
+    });
 
-    // Add grey background lines for context.
-    background = svg.append("g")
-        .attr("class", "background")
-      .selectAll("path")
-        .data(cars)
-      .enter().append("path")
-        .attr("d", path);
+      this.pc2 = d3.parcoords()("#pcPlot");
 
-    // Add blue foreground lines for focus.
-    foreground = svg.append("g")
-        .attr("class", "foreground")
-      .selectAll("path")
-        .data(cars)
-      .enter().append("path")
-        .attr("d", path);
+      this.pc2
+        .data(this.data)
+        .color("rgb(31, 119, 180)")
+        .alpha(0.2)
+        .margin({ top: 24, left: 0, bottom: 12, right: 0 })
+        .render()
+        .reorderable();
 
-    // Add a group element for each dimension.
-    var g = svg.selectAll(".dimension")
-        .data(dimensions)
-      .enter().append("g")
-        .attr("class", "dimension")
-        .attr("transform", function(d) { return "translate(" + x(d) + ")"; })
-        .call(d3.behavior.drag()
-          .origin(function(d) { return {x: x(d)}; })
-          .on("dragstart", function(d) {
-            dragging[d] = x(d);
-            background.attr("visibility", "hidden");
-          })
-          .on("drag", function(d) {
-            dragging[d] = Math.min(width, Math.max(0, d3.event.x));
-            foreground.attr("d", path);
-            dimensions.sort(function(a, b) { return position(a) - position(b); });
-            x.domain(dimensions);
-            g.attr("transform", function(d) { return "translate(" + position(d) + ")"; })
-          })
-          .on("dragend", function(d) {
-            delete dragging[d];
-            transition(d3.select(this)).attr("transform", "translate(" + x(d) + ")");
-            transition(foreground).attr("d", path);
-            background
-                .attr("d", path)
-              .transition()
-                .delay(500)
-                .duration(0)
-                .attr("visibility", null);
-          }));
+    //Correct the appearance of the plot
+    $('#pcPlot canvas').css('position', 'absolute');
+    $('#pcPlot svg').css('bottom', '0px');
+    
+    //Show the change axes button
+    $('#pcpBtn').show();
 
-    // Add an axis and title.
-    g.append("g")
-        .attr("class", "axis")
-        .each(function(d) { d3.select(this).call(axis.scale(y[d])); })
-      .append("text")
-        .style("text-anchor", "middle")
-        .attr("y", -9)
-        .text(function(d) { return d; });
+}
 
-    // Add and store a brush for each axis.
-    g.append("g")
-        .attr("class", "brush")
-        .each(function(d) {
-          d3.select(this).call(y[d].brush = d3.svg.brush().y(y[d]).on("brushstart", brushstart).on("brush", brush));
-        })
-      .selectAll("rect")
-        .attr("x", -8)
-        .attr("width", 16);
-
-    function position(d) {
-      var v = dragging[d];
-      return v == null ? x(d) : v;
-    }
-
-    function transition(g) {
-      return g.transition().duration(500);
-    }
-
-    // Returns the path for a given data point.
-    function path(d) {
-      return d3.svg.line(dimensions.map(function(p) { return [position(p), y[p](d[p])]; }));
-    }
-
-    function brushstart() {
-      d3.event.sourceEvent.stopPropagation();
-    }
-
-    // Handles a brush event, toggling the display of foreground lines.
-    function brush() {
-      var actives = dimensions.filter(function(p) { return !y[p].brush.empty(); }),
-          extents = actives.map(function(p) { return y[p].brush.extent(); });
-      foreground.style("display", function(d) {
-        return actives.every(function(p, i) {
-          return extents[i][0] <= d[p] && d[p] <= extents[i][1];
-        }) ? null : "none";
-      });
-    }
+PCPlot.prototype.empty = function() {
+    $('#pcPlotMsg').show();
+    $('#pcpBtn').hide();
+    $('#pcPlot').empty();
+    $('#pcPlot').height(0);
 }
