@@ -8,7 +8,7 @@ function updateViews() {
         $('#countryFilter').prev().html(map.selectedCountry.name + ' <span class="caret"></span>');
         
         //TODO: update bubble chart
-        
+        bc = new bubblechart({country: map.selectedCountry.name});
         //update PCP
         if (pcp) pcp.empty();   //empty the pcp first, otherwise the axes might get messed up.
         
