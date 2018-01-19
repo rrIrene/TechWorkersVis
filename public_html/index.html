@@ -562,9 +562,9 @@
                 }
                 
                 group_data[jobData[j].DevTypeF].values.push({            
-                    x: jobData[j].Salary,
+                    x: jobData[j].Experience, 
                     y: jobData[j].JobSatisfaction,
-                    size: 20//jobData[j].Experience
+                    size: jobData[j].Salary/100
                 });       
             }
             
@@ -603,12 +603,15 @@
             });   
     }
     
-    d3.json("data/test3.json", function(error, jsonData) {
+    function makeBubbleChart(){
+    d3.json("data/Austria.json", function(error, jsonData) {
         if (error) return console.warn(error);
         var chartData = createChartData(jsonData);
         drawChart(chartData);
         });
-
+        }
+     
+    test()
     </script>
 
         <!-- Google Analytics: change UA-XXXXX-X to be your site's ID. -->
