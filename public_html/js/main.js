@@ -10,6 +10,8 @@ function updateViews() {
         //TODO: update bubble chart
         
         //update PCP
+        if (pcp) pcp.empty();   //empty the pcp first, otherwise the axes might get messed up.
+        
         pcp = new PCPlot({
             data: map.data,
             country: map.selectedCountry.name,
