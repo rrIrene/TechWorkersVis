@@ -124,7 +124,7 @@
           <img id="datamapLoader" src="img/loader.gif" class="d-inline-block" style="display: none;height: 16px;" />
           <div id="worldMap"></div>
         </div>
-        <div class="col-md-4">
+        <div class="col-md-6">
           <h2>Bubble chart</h2>
           <!--<p><a class="btn btn-default" href="#" role="button">Change axes &raquo;</a></p>-->
           <div id="chart">
@@ -161,7 +161,8 @@
         <script src="js/vendor/d3.v3.js"></script>        
         <script src="js/vendor/topojson.v1.js"></script>        
         <script src="js/vendor/datamaps.world.hires.js"></script>    
-        <script src="js/vendor/d3.parcoords.js"></script>        
+        <script src="js/vendor/d3.parcoords.js"></script>    
+        <script src="js/vendor/d3-legend.min.js"></script>
         <script>	
           
           //Start world map with Datamap and Zoom
@@ -541,16 +542,6 @@
     <link rel="stylesheet" type="text/css" href="https://cdn.rawgit.com/novus/nvd3/v1.8.1/build/nv.d3.css">
     <script type="text/javascript">
     
-    
-    
-//    function parseJobData(csvData) {
-//        var job_data = [{"JobSatisfaction":9 ,"Salary":100000 ,"Experience": 20},
-//                        {"JobSatisfaction":5 ,"Salary":75000 ,"Experience": 10},
-//                        {"JobSatisfaction":14 ,"Salary":50000 ,"Experience": 5}];
-//                    
-//        return job_data;
-//    }
-    
     function createChartData(jobData) {
         var group_data = {};
 
@@ -565,7 +556,7 @@
                 group_data[jobData[j].DevTypeF].values.push({            
                     x: jobData[j].Experience, 
                     y: jobData[j].JobSatisfaction,
-                    size: jobData[j].Salary/100
+                    size: jobData[j].Salary/10
                 });       
             }
             
@@ -581,35 +572,45 @@
             var chart = nv.models.scatterChart()
                           .showDistX(true)
                           .showDistY(true)
-                          .color(d3.scale.category10().range());
+                          .color(d3.scale.category10().range())
+                          .tooltipContent(function (jobData) {
+                                // return x;y value on mouse hover
+//                                return '<p>' + jobData.point.x + '; '+ jobData.point.y +'</p>';
+                                //return salary on mouse hover
+                                return '<p>' + jobData.point.size*10 + 'salary per year'+ '</p>';
+                            });
 
-            chart.xAxis.tickFormat(d3.format('.02f'));
-            chart.yAxis.tickFormat(d3.format('.02f'));
-            chart.yAxis.tickValues(['2','4','8','16','32']);
+            chart.yAxis.tickValues(['0','2','4','6','8', '10']);
+//            chart.xAxis.tickValues(['0.5','2','4','6','8', '10', '12', '14', '16', '18', '20+']);
+//            chart.xRange(['0.5','2','4','6','8', '10', '12', '14', '16', '18', '20+']);
+//            chart.yRange(['0','2','4','6','8', '10']);
 
-            chart.tooltipContent( function(key, x, y){ 
-                    return key;
-                });
-
+            chart.yAxis
+                    .axisLabel("Job Satisfaction")
+                    .tickFormat(d3.format('.02f'));
+            chart.xAxis
+                    .axisLabel("Work Experience (in years)")
+                    .tickFormat(d3.format(', r'));
+            
             d3.select('#chart svg')
-                .datum(jobData)
-//                .attr("width", 800)
-//                .attr("height", 800)
-                .transition().duration(500)
-                .call(chart);
+                 .datum(jobData)
+//                 .attr("width", 1000)
+//                 .attr("height", 1000)
+                 .transition().duration(500)
+                 .call(chart);
+            
 
             nv.utils.windowResize(chart.update);
             return chart;
-
-            });   
-    }
+            });
+    } 
     
     function makeBubbleChart(file_name_Data){
-    d3.json(file_name_Data, function(error, jsonData) {
-        if (error) return console.warn(error);
-        var chartData = createChartData(jsonData);
-        drawChart(chartData);
-        });
+        d3.json(file_name_Data, function(error, jsonData) {
+            if (error) return console.warn(error);
+            var chartData = createChartData(jsonData);
+            drawChart(chartData);
+            });
         }
     
     function bubblechart(args) {
@@ -619,10 +620,14 @@
     
     bubblechart.prototype.init = function() {
     $('#chartMsg').hide();
-    $('#chart svg').height(($('#chart svg').width() *1.5));
+    $('#chart svg').height(400);
+
+    $('#chart svg').width(($('#chart svg').height()*3));
+//      $('#chart svg').height(600);
+//      $('#chart svg').width(550);
     var self = this;
     var country = this.country; 
-
+   
     var folder = 'data/';
     var fileloc = folder.concat(country, '.json');
     
