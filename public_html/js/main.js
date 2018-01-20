@@ -10,7 +10,7 @@ function updateViews() {
         
         //update bubble chart
         if (bc) bc.empty();
-        bc = new bubblechart({country: map.selectedCountry.name});
+        bc = new bubblechart({country: map.selectedCountry.name, minSalary: 0, maxSalary: 0});
         //update PCP
         if (pcp) pcp.empty();   //empty the pcp first, otherwise the axes might get messed up.
         

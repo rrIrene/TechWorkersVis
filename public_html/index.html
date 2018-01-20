@@ -56,10 +56,6 @@
               text-shadow: 0 1px 0 #fff, 1px 0 0 #fff, 0 -1px 0 #fff, -1px 0 0 #fff;
               cursor: move;
             }
-            
-            #pcPlot g g g.tick test {
-                font-size: xx-small;
-            }
         </style>
         <link rel="stylesheet" href="css/bootstrap-theme.min.css">
         <link rel="stylesheet" href="css/main.css">
@@ -104,7 +100,7 @@
     <div class="container">
       <!-- Example row of columns -->
       <div class="row">
-        <div class="col-md-8">
+        <div class="col-md-10">
           <h2>Map</h2>
           <div class="dropdown" style="display: inline-block;">
             <button id="attributeFilter" class="btn btn-default dropdown-toggle" type="button" data-toggle="dropdown">Job satisfaction
@@ -126,11 +122,11 @@
         </div>
         <div class="col-md-6">
           <h2>Bubble chart</h2>
+           <p id="chartMsg">Select a country to explore attributes.</p>
           <!--<p><a class="btn btn-default" href="#" role="button">Change axes &raquo;</a></p>-->
           <div id="chart">
               <svg></svg>
           </div>
-           <p id="chartMsg">Select a country to explore attributes.</p>
 
         </div>   
       </div>
@@ -547,6 +543,9 @@
 
           for (var j = 0; j < jobData.length; j++) {
               
+              if (jobData[j].Salary > bc.maxSalary) bc.maxSalary = jobData[j].Salary;
+              else if (jobData[j].Salary < bc.minSalary) bc.minSalary = jobData[j].Salary;
+              
                 if (!(group_data[jobData[j].DevTypeF])) {
                     group_data[jobData[j].DevTypeF] = {
                             key: jobData[j].DevTypeF,
@@ -556,7 +555,8 @@
                 group_data[jobData[j].DevTypeF].values.push({            
                     x:  jobData[j].Salary, //jobData[j].Experience, 
                     y: jobData[j].JobSatisfaction,
-                    size: jobData[j].Experience // jobData[j].Salary/10
+                    size: jobData[j].Experience, // jobData[j].Salary/10
+                    formalEdu: map.data[jobData[j].Respondent].FormalEducation
                 });       
             }
             
@@ -577,13 +577,16 @@
                                 // return x;y value on mouse hover
 //                                return '<p>' + jobData.point.x + '; '+ jobData.point.y +'</p>';
                                 //return salary on mouse hover
-                                return '<p>' + jobData.point.size + ' years work experience'+ '</p>';
+                                return '<p>' + jobData.point.size + ' years work experience; '+ jobData.point.formalEdu + '</p>';
                             });
 
             chart.yAxis.tickValues(['0','2','4','6','8', '10']);
 //            chart.xAxis.tickValues(['0.5','2','4','6','8', '10', '12', '14', '16', '18', '20+']);
 //            chart.xRange(['0.5','2','4','6','8', '10', '12', '14', '16', '18', '20+']);
 //            chart.yRange(['0','2','4','6','8', '10']);
+
+            chart.yDomain([0,10]);
+            chart.xDomain([bc.minSalary,bc.maxSalary]);
 
             chart.yAxis
                     .axisLabel("Job Satisfaction")

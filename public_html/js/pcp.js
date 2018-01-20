@@ -22,7 +22,12 @@ PCPlot.prototype.init = function() {
     //Filter the data to only the filtered country
     var self = this;
     this.data = this.data.filter(function(row) {
-        if (row.Country === self.country)  return row;
+        if (row.Country === self.country 
+                && row.Overpaid !== 'NA'
+                && row.DeveloperType !== 'NA'
+                && row.CompanyType !== 'NA'
+                && row.CompanySize !== 'NA'
+                && row.YearsCodedJob !== 'NA')  return row;
     });
     
     //Now filter to only the default columns
@@ -33,6 +38,21 @@ PCPlot.prototype.init = function() {
         else if (self.satisfactionType === 'career')
             newColumns['CareerSatisfaction'] = d.CareerSatisfaction;
         newColumns['Overpaid'] = d.Overpaid;
+        newColumns['FormalEducation'] = d.FormalEducation;
+        var expIsRange = d.YearsCodedJob.toLowerCase().indexOf('more') < 0 && d.YearsCodedJob.toLowerCase().indexOf('less than') < 0;
+        if (expIsRange) {
+            var parsedYearsJob = parseInt(d.YearsCodedJob);
+            if (parsedYearsJob < 5)  newColumns['Experience'] = '1-5 years';
+            else if (parsedYearsJob < 10)   newColumns['Experience'] = '6-10 years';
+            else if (parsedYearsJob < 20)   newColumns['Experience'] = '11-20 years';
+        }
+        else {
+            newColumns['Experience'] = d.YearsCodedJob;
+        }
+        if (d.DeveloperType.indexOf(';') < 0)
+            newColumns['DeveloperType'] = d.DeveloperType;
+        else
+            newColumns['DeveloperType'] = '2 or more';
         newColumns['CompanyType'] = d.CompanyType;
         newColumns['CompanySize'] = d.CompanySize;
         
@@ -55,6 +75,7 @@ PCPlot.prototype.init = function() {
     //Correct the appearance of the plot
     $('#pcPlot canvas').css('position', 'absolute');
     $('#pcPlot svg').css('bottom', '0px');
+    $('#pcPlot text').css('font-size', 'x-small')
     
     //Show the change axes button
     $('#pcpBtn').show();
