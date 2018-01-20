@@ -1,4 +1,5 @@
 var pcp;
+var bc;
 
 function updateViews() {
     if (map.selectedCountry) {
@@ -7,7 +8,8 @@ function updateViews() {
         //Update the country dropdown
         $('#countryFilter').prev().html(map.selectedCountry.name + ' <span class="caret"></span>');
         
-        //TODO: update bubble chart
+        //update bubble chart
+        if (bc) bc.empty();
         bc = new bubblechart({country: map.selectedCountry.name});
         //update PCP
         if (pcp) pcp.empty();   //empty the pcp first, otherwise the axes might get messed up.
@@ -24,7 +26,8 @@ function updateViews() {
         //Update the country dropdown
         $('#countryFilter').prev().html('Select country... <span class="caret"></span>');
         
-        //TODO: update bubble chart
+        //empty bubble chart
+        bc.empty();
         
         //empty PCP
         pcp.empty();

@@ -18,20 +18,6 @@ function PCPlot(args) {
 PCPlot.prototype.init = function() {
     $('#pcPlotMsg').hide();
     $('#pcPlot').height(($('#pcPlot').width() / 2) - 10);
-       
-//    var data2 = d3.range(0,2*Math.PI,Math.PI/40)
-//        .map(function(x) {
-//          return {
-//            "-x": -x,
-//            x: x,
-//            "sin(x)": Math.sin(x),
-//            "cos(x)": Math.cos(x),
-//            "atan(x)": Math.atan(x),
-//            "exp(x)": Math.exp(x),
-//            "square(x)": x*x,
-//            "sqrt(x)": Math.sqrt(x),
-//          };
-//        });
     
     //Filter the data to only the filtered country
     var self = this;
