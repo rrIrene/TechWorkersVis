@@ -554,9 +554,9 @@
                 }
                 
                 group_data[jobData[j].DevTypeF].values.push({            
-                    x: jobData[j].Experience, 
+                    x:  jobData[j].Salary, //jobData[j].Experience, 
                     y: jobData[j].JobSatisfaction,
-                    size: jobData[j].Salary/10
+                    size: jobData[j].Experience // jobData[j].Salary/10
                 });       
             }
             
@@ -577,7 +577,7 @@
                                 // return x;y value on mouse hover
 //                                return '<p>' + jobData.point.x + '; '+ jobData.point.y +'</p>';
                                 //return salary on mouse hover
-                                return '<p>' + jobData.point.size*10 + 'salary per year'+ '</p>';
+                                return '<p>' + jobData.point.size + ' years work experience'+ '</p>';
                             });
 
             chart.yAxis.tickValues(['0','2','4','6','8', '10']);
@@ -589,7 +589,7 @@
                     .axisLabel("Job Satisfaction")
                     .tickFormat(d3.format('.02f'));
             chart.xAxis
-                    .axisLabel("Work Experience (in years)")
+                    .axisLabel("Salary (per year)")
                     .tickFormat(d3.format(', r'));
             
             d3.select('#chart svg')
