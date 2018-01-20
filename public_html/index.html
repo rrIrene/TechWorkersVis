@@ -543,6 +543,7 @@
 
           for (var j = 0; j < jobData.length; j++) {
               
+              //keep track of max & min salary to avoid overlap
               if (jobData[j].Salary > bc.maxSalary) bc.maxSalary = jobData[j].Salary;
               else if (jobData[j].Salary < bc.minSalary) bc.minSalary = jobData[j].Salary;
               
@@ -585,6 +586,7 @@
 //            chart.xRange(['0.5','2','4','6','8', '10', '12', '14', '16', '18', '20+']);
 //            chart.yRange(['0','2','4','6','8', '10']);
 
+            //fix the axes range to maximum and minimum values possible to avoid overlap
             chart.yDomain([0,10]);
             chart.xDomain([bc.minSalary,bc.maxSalary]);
 
