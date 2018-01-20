@@ -538,7 +538,7 @@
     <link rel="stylesheet" type="text/css" href="https://cdn.rawgit.com/novus/nvd3/v1.8.1/build/nv.d3.css">
     <script type="text/javascript">
     
-    function createChartData(jobData) {
+    function createChartData(jobData, satisfactionType) {
         var group_data = {};
 
           for (var j = 0; j < jobData.length; j++) {
@@ -552,13 +552,21 @@
                             key: jobData[j].DevTypeF,
                             values: []};
                 }
-                
-                group_data[jobData[j].DevTypeF].values.push({            
+                                
+                if (satisfactionType === 'job')
+                    group_data[jobData[j].DevTypeF].values.push({            
                     x:  jobData[j].Salary, //jobData[j].Experience, 
                     y: jobData[j].JobSatisfaction,
                     size: jobData[j].Experience, // jobData[j].Salary/10
                     formalEdu: map.data[jobData[j].Respondent].FormalEducation
-                });       
+                    });   
+                else if (satisfactionType === 'career')
+                    group_data[jobData[j].DevTypeF].values.push({            
+                        x:  jobData[j].Salary, //jobData[j].Experience, 
+                        y: jobData[j].CareerSatisfaction,
+                        size: jobData[j].Experience, // jobData[j].Salary/10
+                        formalEdu: map.data[jobData[j].Respondent].FormalEducation
+                        });       
             }
             
           var array = $.map(group_data ,function(value, index) {
@@ -568,7 +576,7 @@
         }
 
 
-    function drawChart(jobData) {
+    function drawChart(jobData, satisfactionType) {
         nv.addGraph(function() {
             var chart = nv.models.scatterChart()
                           .showDistX(true)
@@ -583,24 +591,27 @@
 
             chart.yAxis.tickValues(['0','2','4','6','8', '10']);
 //            chart.xAxis.tickValues(['0.5','2','4','6','8', '10', '12', '14', '16', '18', '20+']);
-//            chart.xRange(['0.5','2','4','6','8', '10', '12', '14', '16', '18', '20+']);
-//            chart.yRange(['0','2','4','6','8', '10']);
+
 
             //fix the axes range to maximum and minimum values possible to avoid overlap
             chart.yDomain([0,10]);
             chart.xDomain([bc.minSalary,bc.maxSalary]);
-
-            chart.yAxis
-                    .axisLabel("Job Satisfaction")
-                    .tickFormat(d3.format('.02f'));
+            
+            if (satisfactionType === 'job')
+                chart.yAxis
+                        .axisLabel("Job Satisfaction")
+                        .tickFormat(d3.format('.02f'));
+            else if (satisfactionType === 'career')
+                chart.yAxis
+                        .axisLabel("Career Satisfaction")
+                        .tickFormat(d3.format('.02f'));
+                
             chart.xAxis
                     .axisLabel("Salary (per year)")
                     .tickFormat(d3.format(', r'));
             
             d3.select('#chart svg')
                  .datum(jobData)
-//                 .attr("width", 1000)
-//                 .attr("height", 1000)
                  .transition().duration(500)
                  .call(chart);
             
@@ -610,11 +621,11 @@
             });
     } 
     
-    function makeBubbleChart(file_name_Data){
+    function makeBubbleChart(file_name_Data, satisfactionType){
         d3.json(file_name_Data, function(error, jsonData) {
             if (error) return console.warn(error);
-            var chartData = createChartData(jsonData);
-            drawChart(chartData);
+            var chartData = createChartData(jsonData, satisfactionType);
+            drawChart(chartData, satisfactionType);
             });
         }
     
@@ -636,7 +647,7 @@
     var folder = 'data/';
     var fileloc = folder.concat(country, '.json');
     
-    makeBubbleChart(fileloc)
+    makeBubbleChart(fileloc, this.satisfactionType)
 }
 
 bubblechart.prototype.empty = function() {
