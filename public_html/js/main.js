@@ -27,10 +27,11 @@ function updateViews() {
         $('#countryFilter').prev().html('Select country... <span class="caret"></span>');
         
         //empty bubble chart
-        bc.empty();
+        if (bc) bc.empty();
+        bc = null;
         
         //empty PCP
-        pcp.empty();
+        if (pcp) pcp.empty();
         pcp = null;
     }
 }
